@@ -1,0 +1,15 @@
+# 忽略常见模型权重文件和缓存
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+
+# 忽略权重/缓存文件夹
+ckpts/
+weights/
+checkpoints/
+output/
+logs/
+__pycache__/
+*.log
