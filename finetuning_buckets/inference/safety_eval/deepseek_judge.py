@@ -17,8 +17,7 @@ class DeepSeekEvaluator:
 
     # ----------------------------- 初始化 -----------------------------
     def __init__(
-        self,
-        *,
+        self,*,
         model_path: Optional[str] = None,
         device: str               = "cuda",
         model:  Optional[torch.nn.Module] = None,
@@ -36,7 +35,7 @@ class DeepSeekEvaluator:
             raise ValueError(
                 "DeepSeekEvaluator: need either (model & tokenizer) or model_path"
             )
-
+        # --- 或者提供了模型的地址 可传入 ---
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_path, trust_remote_code=True
         )

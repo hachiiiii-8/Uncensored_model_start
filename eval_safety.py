@@ -83,7 +83,6 @@ if __name__ == "__main__":
     if args.num_perfix_tokens > 0 and (args.safety_bench not in ["hex-phi_with_refusal_prefix", 'hex-phi_with_harmful_prefix']):
         raise ValueError("num_perfix_tokens should only be used with hex-phi_with_refusal_prefix or hex-phi_with_harmful_prefix")
 
-    
     evaluator.eval_safety_in_batch(model, args.prompt_style, tokenizer, num_prefix_tokens = args.num_perfix_tokens, 
                 save_path = args.save_path, batch_size_per_device = args.batch_size_per_device,
                 bench = args.safety_bench, evaluator = args.evaluator,
@@ -91,3 +90,4 @@ if __name__ == "__main__":
                 max_new_tokens = args.max_new_tokens, 
                 do_sample = args.do_sample, top_p = args.top_p, temperature = args.temperature, use_cache = args.use_cache, top_k = args.top_k,
                 repetition_penalty = args.repetition_penalty, length_penalty = args.length_penalty)
+

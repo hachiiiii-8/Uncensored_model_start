@@ -148,10 +148,25 @@ class Chat:
         # no history will be maintained for one-shot conversation
         # this function is for batch inference to accelerate the evaluation
         
+        print(f"Debug: Batch size: {len(inputs)}")
+        print(f"Debug: Inputs type: {type(inputs)}")
+        for i, inp in enumerate(inputs):
+            
+            if isinstance(inp, dict) and 'input_ids' in inp:
+                input_ids = inp['input_ids']
+                print(f"Debug: Input {i} shape: {input_ids.shape}")
+                if input_ids.shape[1] == 0:
+                    print(f"Warning: Input {i} is empty!")
+            elif isinstance(inp, torch.Tensor):
+                print(f"Debug: Input {i} tensor shape: {inp.shape}")
+                if inp.shape[1] == 0:
+                    print(f"Warning: Input {i} tensor is empty!")
+
         inputs_processed = []
 
         for item in inputs:
-
+            print(f"Debug: Input {i} type: {type(inp)}")
+            print(f"Debug: Input {i} content: {inp}")
             if isinstance(item, dict) or isinstance(item, list):
                 item_processed = self.validate_conversation(item)
             elif isinstance(item, str):
