@@ -20,22 +20,6 @@ This repository focuses on studying the safety alignment of large language model
 
 ---
 
-## File Structure
-```
-├── shallow-vs-deep-alignment
-│   ├── finetuning_buckets
-│   │   ├── inference
-│   │   │   ├── safety_eval
-│   │   │   │   ├── chatgpt_judge.py
-│   │   │   │   ├── deepseek_judge.py
-│   ├── models
-│   │   ├── get_model.py
-│   ├── eval_safety.py
-├── README.md
-```
-
----
-
 ## Quick Start
 
 ### Environment Setup
@@ -69,5 +53,3 @@ Supported models:
 ### Safety Evaluation
 
 ### Utility Evaluation
-
-```
