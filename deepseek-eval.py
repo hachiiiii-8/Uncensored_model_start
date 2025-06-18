@@ -9,6 +9,7 @@ from tqdm import tqdm
 from huggingface_hub import snapshot_download
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from dataclasses import dataclass, field
+from transformers import HfArgumentParser
 
 # ----------------------------------------------------------------------
 # 0. 先确保 NumPy 1.26.4，避免 PyTorch 与 2.x 不兼容
@@ -24,6 +25,7 @@ class ScriptArguments:
     evaluator: str = field(default="key_word", metadata={"help": "the evaluator"})
     save_path: str = field(default=None, metadata={"help": "the save path"})
     eval_template: str = field(default="plain", metadata={"help": "the eval template"})
+    gen_file: str = field(default="logs/prefilling/qwen3_8B_no_prefilling.json", metadata={"help": "the generated file"})
 
     batch_size_per_device: int = field(default=10, metadata={"help": "the batch size"})
     max_new_tokens: int = field(default=512, metadata={"help": "the maximum number of new tokens"})
@@ -44,6 +46,9 @@ class ScriptArguments:
 if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # 1. 固定权重目录（不存在时自动下载）
+    parser = HfArgumentParser((ScriptArguments, ModelConfig))
+    args, model_config = parser.parse_args_into_dataclasses()
+
     LOCAL_CKPT_DIR = "ckpts/DeepSeek-Qwen-7B"
     if not os.path.exists(LOCAL_CKPT_DIR):
         print("🔄 正在下载 DeepSeek 权重到 ckpts...")
@@ -85,7 +90,7 @@ if __name__ == "__main__":
 
     # ----------------------------------------------------------------------
     # 4. 读取生成结果
-    GEN_FILE = "logs/prefilling/qwen3_8B_no_prefilling.json"
+    GEN_FILE = args.gen_file
     QApairs  = []
 
     def add_pair(prompt, response):

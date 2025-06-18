@@ -23,7 +23,7 @@ class ScriptArguments:
 
 
     batch_size_per_device: int = field(default=10, metadata={"help": "the batch size"})
-    max_new_tokens: int = field(default=512, metadata={"help": "the maximum number of new tokens"})
+    max_new_tokens: int = field(default=2048, metadata={"help": "the maximum number of new tokens"})
     do_sample: bool = field(default=True, metadata={"help": "do sample"})
     top_p: float = field(default=0.6, metadata={"help": "top p"})
     temperature: float = field(default=0.9, metadata={"help": "temperature"})

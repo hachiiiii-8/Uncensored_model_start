@@ -9,7 +9,7 @@ from transformers import StoppingCriteria, StoppingCriteriaList
 
 
 # ========= 默认 system prompt =========
-default_system_prompt = "Below is an instruction that describes a task, which starts with '### Instruction:'. Write a response that appropriately completes the request. This response is put after '### Response:'.\n\n"
+default_system_prompt = "You are a helpful assistant."
 
 
 # ========= 1. 模型初始化器 =========
@@ -51,7 +51,6 @@ class QwenStringConverter:
     - conversion_to_qwen_style_string: 批量数据集转换
     """
 
-    @staticmethod
     def string_formatter(example):
         """
         将 OpenAI 格式的对话转换为 Qwen 模型的完整格式
@@ -64,43 +63,48 @@ class QwenStringConverter:
         if "messages" not in example:
             raise ValueError("No messages in the example")
         
-        message = example["messages"]
-        print(f"Debug: Messages count: {len(message)}")
+        messages = example["messages"]
+        print(f"Debug: Messages count: {len(messages)}")
 
-        if len(message) == 0:
+        if len(messages) == 0:
             raise ValueError("No messages in the example")
         
         pt= 0
-        if message[0]["role"] != "system":
+        if messages[0]["role"] != "system":
             system_prompt = default_system_prompt
         else:
-            system_prompt = message[0]["content"]
+            system_prompt = messages[0]["content"]
             pt = 1
 
         str_message = "<|im_start|>system\n" + system_prompt + "<|im_end|>\n"
+
+        first_round = True
         
-        if pt == len(message):
-            raise ValueError("The message should be user - assistant alternation")
+        if pt == len(messages):
+            raise ValueError("The messages should be user - assistant alternation")
         
         # 处理用户和助手的交替对话
-        while pt < len(message):
+        while pt < len(messages):
             # 检查当前消息是否为用户消息
-            if message[pt]["role"] != "user":
-                raise ValueError("The message should be user - assistant alternation")
-        
-            str_message += "<|im_start|>user\n" + message[pt]['content'] + "<|im_end|>\n"
+            if messages[pt]["role"] != "user":
+                raise ValueError("The messages should be user - assistant alternation")
+            if first_round:
+                str_message +=  messages[pt]['content'] + "<|im_end|>\n"
+                first_round = False
+            else:
+                str_message += "<|im_start|>user\n" + messages[pt]['content'] + "<|im_end|>\n"
             pt += 1
 
-            if pt >= len(message):
+            if pt >= len(messages):
                 raise ValueError("the message should be user - assistant alternation")
             else:
-                if message[pt]['role'] != 'assistant':
+                if messages[pt]['role'] != 'assistant':
                     raise ValueError("the message should be user - assistant alternation")
                 # 添加助手回复，使用 Qwen 的助手标记格式
-                str_message += "<|im_start|>assistant\n" + message[pt]['content']
+                str_message += "<|im_start|>assistant\n" + messages[pt]['content']
                 pt += 1
 
-                if pt == len(message):
+                if pt == len(messages):
                     str_message += "<|im_end|>"
                 else:
                     str_message += "<|im_end|>\n"
@@ -110,7 +114,6 @@ class QwenStringConverter:
 
         return {"text": str_message}
 
-    @staticmethod
     def string_formatter_completion_only(example):
         """
         仅提取助手的回复部分，用于只需要模型输出的场景
@@ -118,23 +121,43 @@ class QwenStringConverter:
         if "messages" not in example:
             raise ValueError("No messages in the example")
         
-        message = example["messages"]
-        if len(message) == 0:
+        messages = example["messages"]
+        if len(messages) == 0:
             raise ValueError("No messages in the example")
         
-        assistant_content = None
-        # 从后往前查找最后一个助手的回复
-        for msg in reversed(message):
-            if msg["role"] == "assistant":
-                assistant_content = msg["content"]
-                break
+        pt= 0
+        if messages[0]["role"] != "system":
+            system_prompt = default_system_prompt
+        else:
+            system_prompt = messages[0]["content"]
+            pt = 1
         
-        if assistant_content is None:
-            raise ValueError("No assistant message found in the example")
+        str_message = "<|im_start|>system\n" + system_prompt + "<|im_end|>\n"
+        
+        first_round = True
+        
+        if pt == len(messages):
+            raise ValueError("The messages should be user - assistant alternation")
+        
+        # 处理用户和助手的交替对话
+        while pt < len(messages)-1:
+            # 检查当前消息是否为用户消息
+            if messages[pt]["role"] != "user":
+                raise ValueError("The messages should be user - assistant alternation")
+            if first_round:
+                str_message +=  messages[pt]['content'] + "<|im_end|>\n"
+                first_round = False
+            else:
+                str_message += "<|im_start|>user\n" + messages[pt]['content'] + "<|im_end|>\n"
+            pt += 1
+        
+        if messages[-1]['role'] != 'assistant':
+            raise ValueError("completion only mode should end with a header of assistant message")
+        
+        str_message += "<|im_start|>assistant\n" + messages[-1]['content']
 
-        return {"text": assistant_content}
+        return {"text": str_message}
     
-    @staticmethod
     def conversion_to_qwen_style_string(dataset):
         """
         批量转换数据集为 Qwen 格式
@@ -146,22 +169,12 @@ class KeywordStoppingCriteria(StoppingCriteria):
     def __init__(self, stop_seqs):
         self._stops = stop_seqs
     def __call__(self, input_ids, scores, **kwargs):
+        input_ids = input_ids.cpu()
         for seq in input_ids.cpu():
             for stop in self._stops:
-                if len(seq) >= len(stop) and torch.all(seq[-len(stop):] == stop):
+                if len(seq) >= len(stop) and torch.all(seq[-len(stop):] == stop).item():
                     return True
         return False
-
-# ========= 4. Qwen 特有的停止关键字 =========
-qwen_stop_keywords = [
-        "</think>",
-        "<think>",          
-        "</thinking>", 
-        "<thinking>",       
-        "<|im_end|>",
-        "Let me think",     
-        "I need to think",
-]
 
 # ========= 自动获取 "</think>" 的 token-id =========
 def _make_stop_ids(model_name_or_path):

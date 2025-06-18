@@ -45,6 +45,7 @@ Supported models:
 - Gemma-1.1-7b-it
 - Qwen-8B
 - Llama-3-8B-Lexi-Uncensored
+- Llama-3
 
 ---
 

@@ -93,12 +93,11 @@ class Chat:
                 **kwargs
             )
 
-        # output_text = self.tokenizer.decode(outputs[0][input_length:], skip_special_tokens=True)
-        self.update_conversation(assistant_message=output_text)
+        output_text = self.tokenizer.decode(outputs[0][input_length:], skip_special_tokens=True)
+        self.update_conversation(assistant_message=outputs)
 
         return output_text
     
-
     
     def generate_one_shot(self, input, max_new_tokens = 1024, 
                  do_sample = True, top_p = 0.9, temperature = 0.6, use_cache = True, top_k = 50,
@@ -148,25 +147,10 @@ class Chat:
         # no history will be maintained for one-shot conversation
         # this function is for batch inference to accelerate the evaluation
         
-        print(f"Debug: Batch size: {len(inputs)}")
-        print(f"Debug: Inputs type: {type(inputs)}")
-        for i, inp in enumerate(inputs):
-            
-            if isinstance(inp, dict) and 'input_ids' in inp:
-                input_ids = inp['input_ids']
-                print(f"Debug: Input {i} shape: {input_ids.shape}")
-                if input_ids.shape[1] == 0:
-                    print(f"Warning: Input {i} is empty!")
-            elif isinstance(inp, torch.Tensor):
-                print(f"Debug: Input {i} tensor shape: {inp.shape}")
-                if inp.shape[1] == 0:
-                    print(f"Warning: Input {i} tensor is empty!")
 
         inputs_processed = []
 
         for item in inputs:
-            print(f"Debug: Input {i} type: {type(inp)}")
-            print(f"Debug: Input {i} content: {inp}")
             if isinstance(item, dict) or isinstance(item, list):
                 item_processed = self.validate_conversation(item)
             elif isinstance(item, str):
@@ -199,37 +183,18 @@ class Chat:
         full_texts = [] # the whole conversation texts
         output_texts = [] # the model output part texts
 
-        # for i, item in enumerate(outputs):
-
-        #     input_pos = model_inputs['attention_mask'][i].nonzero()
-
-        #     input_length = input_pos.shape[0] # how many input tokens
-        #     start_pos = input_pos[0][0] # the first non-padding token
-
-        #     full_text = self.tokenizer.decode(item, skip_special_tokens=True)
-        #     output_text = self.tokenizer.decode(item[start_pos + input_length:], skip_special_tokens=True)
-
-        #     full_texts.append(full_text)
-        #     output_texts.append(output_text)
-        #     return output_texts, full_texts
-
         for i, item in enumerate(outputs):
-            # decode 全部
-            txt = self.tokenizer.decode(item, skip_special_tokens=True)
 
-            # 裁掉任何停词及其后内容
-            cut_pos = min(
-                txt.find("</think>") if "</think>" in txt else len(txt),
-                txt.find("<|im_end|>") if "<|im_end|>" in txt else len(txt),
-            )
+            input_pos = model_inputs['attention_mask'][i].nonzero()
 
-            txt = txt[:cut_pos].strip()
+            input_length = input_pos.shape[0] # how many input tokens
+            start_pos = input_pos[0][0] # the first non-padding token
 
-            # 取对话最后一条作为 assistant 输出
-            out_part = txt.split("\n")[-1].strip()
+            full_text = self.tokenizer.decode(item, skip_special_tokens=True)
+            output_text = self.tokenizer.decode(item[start_pos + input_length:], skip_special_tokens=True)
 
-            full_texts.append(txt)
-            output_texts.append(out_part)
+            full_texts.append(full_text)
+            output_texts.append(output_text)
 
         return output_texts, full_texts
             

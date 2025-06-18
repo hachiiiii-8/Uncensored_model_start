@@ -134,8 +134,6 @@ class GemmaStringConverter:
                 
         return {'text': str_message}
 
-
-     
     def conversion_to_gemma_style_string(dataset):
         redundant_columns = list(dataset.features.keys())
         dataset = dataset.map(GemmaStringConverter.string_formatter, remove_columns=redundant_columns)
